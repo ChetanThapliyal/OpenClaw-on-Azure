@@ -1,0 +1,25 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+!terraform.tfvars.template
+.terraform.lock.hcl
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# User generated
+secret.tfvars
+openclaw_key.pem
+
+# Research & Temporary Files
+openclaw_src/
+install_script.sh
+JOURNEY.md
+ERRORS.md
