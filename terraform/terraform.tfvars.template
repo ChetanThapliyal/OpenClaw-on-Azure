@@ -1,0 +1,5 @@
+allowed_ip_address = "YOUR_PUBLIC_IP/32"
+key_vault_name     = "openclaw-kv-unique-name" # Must be globally unique
+ai_provider        = "gemini" # Options: gemini, anthropic, openai
+location           = "centralindia"
+# budget_amount      = 30 # Uncomment if your subscription supports Cost Management

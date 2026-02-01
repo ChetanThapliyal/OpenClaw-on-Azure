@@ -1,0 +1,67 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - curl
+  - wget
+  - gnupg
+  - ca-certificates
+  - lsb-release
+
+write_files:
+  - path: /root/install_infra.sh
+    permissions: '0700'
+    owner: root:root
+    content: |
+      #!/bin/bash
+      set -euxo pipefail
+      
+      echo "Starting Infrastructure installation..."
+      
+      # 0. Install Azure CLI
+      echo "Installing Azure CLI..."
+      curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+      # 1. Install Docker
+      if ! command -v docker &> /dev/null; then
+          echo "Installing Docker..."
+          curl -fsSL https://get.docker.com | sh
+          usermod -aG docker ${admin_username}
+      fi
+
+      # 2. Install Chrome
+      if ! command -v google-chrome &> /dev/null; then
+          echo "Installing Chrome..."
+          wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          apt-get install -y ./google-chrome-stable_current_amd64.deb || apt-get install -f -y
+          rm google-chrome-stable_current_amd64.deb
+      fi
+
+      # 3. Retrieve Tailscale Key from Key Vault using Managed Identity
+      echo "Logging in with Managed Identity (Client ID: ${identity_client_id})..."
+      # Keep retrying login until it works (sometimes takes a moment after boot)
+      for i in {1..30}; do
+        az login --identity --client-id "${identity_client_id}" --allow-no-subscriptions && break
+        echo "Waiting for identity..."
+        sleep 5
+      done
+
+      echo "Fetching secrets from Key Vault: ${key_vault_name}"
+      TAILSCALE_AUTH_KEY=$(az keyvault secret show --vault-name "${key_vault_name}" --name "tailscale-auth-key" --query "value" -o tsv)
+
+      if [ -z "$TAILSCALE_AUTH_KEY" ]; then
+        echo "ERROR: Failed to retrieve tailscale-auth-key from Key Vault"
+        exit 1
+      fi
+
+      # 4. Install & auth Tailscale
+      if ! command -v tailscale &> /dev/null; then
+          curl -fsSL https://tailscale.com/install.sh | sh
+      fi
+      tailscale up --authkey="$TAILSCALE_AUTH_KEY" --ssh --hostname=openclaw-azure
+
+      echo "Infrastructure ready! User can now SSH in and install OpenClaw manually."
+
+runcmd:
+  - bash /root/install_infra.sh
