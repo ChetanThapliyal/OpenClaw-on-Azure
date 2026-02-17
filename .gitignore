@@ -21,9 +21,12 @@ openclaw_key.pem
 # Research & Temporary Files
 openclaw_src/
 install_script.sh
+
 JOURNEY.md
 ERRORS.md
-
+INTERVIEW_PREP.md
 # Security & Tool Artifacts
 .gemini_security/
 *.tfplan
+tfplan
+
